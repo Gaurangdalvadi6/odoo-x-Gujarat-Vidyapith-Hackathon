@@ -6,6 +6,7 @@ import CourseDetailPage from './pages/CourseDetailPage'
 import CoursesPage from './pages/CoursesPage'
 import LoginPage from './pages/LoginPage'
 import MyCoursesPage from './pages/MyCoursesPage'
+import PlayerPage from './pages/PlayerPage'
 import RegisterPage from './pages/RegisterPage'
 
 function App() {
@@ -39,6 +40,14 @@ function App() {
             element={
               <ProtectedRoute roles={['ADMIN', 'INSTRUCTOR']}>
                 <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/player/:courseId/:enrollmentId"
+            element={
+              <ProtectedRoute>
+                <PlayerPage />
               </ProtectedRoute>
             }
           />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
@@ -12,8 +12,6 @@ function CourseDetailPage() {
   const [reviews, setReviews] = useState([])
   const [enrollment, setEnrollment] = useState(null)
   const [reviewForm, setReviewForm] = useState({ rating: 5, reviewText: '' })
-  const [quizForm, setQuizForm] = useState({ quizId: '', answers: '{}' })
-  const [message, setMessage] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -44,25 +42,6 @@ function CourseDetailPage() {
   const enroll = async () => {
     const { data } = await api.post(`/api/learn/courses/${courseId}/enroll?userId=${userId}`)
     setEnrollment(data)
-  }
-
-  const completeLesson = async (lessonId) => {
-    if (!enrollment) return
-    const { data } = await api.post(`/api/learn/enrollments/${enrollment.id}/lessons/${lessonId}/complete`)
-    setEnrollment(data)
-  }
-
-  const submitQuiz = async (e) => {
-    e.preventDefault()
-    try {
-      const parsed = JSON.parse(quizForm.answers)
-      const { data } = await api.post(`/api/learn/quizzes/${quizForm.quizId}/submit?userId=${userId}`, {
-        answers: parsed,
-      })
-      setMessage(`Quiz submitted. Points earned: ${data.pointsEarned}`)
-    } catch {
-      setMessage('Use valid JSON for answers, e.g. {"1":2}')
-    }
   }
 
   const addReview = async (e) => {
@@ -97,18 +76,18 @@ function CourseDetailPage() {
                 <p className="font-medium">{lesson.title}</p>
                 <p className="text-sm text-slate-500">{lesson.type}</p>
               </div>
-              {enrollment && (
-                <button
-                  className="rounded-md bg-slate-800 px-3 py-2 text-xs text-white"
-                  type="button"
-                  onClick={() => completeLesson(lesson.id)}
-                >
-                  Mark Complete
-                </button>
-              )}
+              <span className="text-xs text-slate-500">Use full-screen player</span>
             </div>
           ))}
         </div>
+        {enrollment && (
+          <Link
+            to={`/player/${courseId}/${enrollment.id}`}
+            className="mt-3 inline-block rounded-md bg-indigo-600 px-3 py-2 text-sm text-white"
+          >
+            Open Full-Screen Player
+          </Link>
+        )}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
@@ -116,27 +95,10 @@ function CourseDetailPage() {
           <h2 className="text-lg font-semibold">Quizzes</h2>
           {quizzes.map((quiz) => (
             <p key={quiz.id} className="mt-2 text-sm">
-              {quiz.title} (id: {quiz.id})
+              {quiz.title}
             </p>
           ))}
-          <form onSubmit={submitQuiz} className="mt-3 space-y-2">
-            <input
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="Quiz ID"
-              value={quizForm.quizId}
-              onChange={(e) => setQuizForm((prev) => ({ ...prev, quizId: e.target.value }))}
-            />
-            <textarea
-              className="h-24 w-full rounded-md border px-3 py-2"
-              placeholder='Answers JSON, example: {"1":2}'
-              value={quizForm.answers}
-              onChange={(e) => setQuizForm((prev) => ({ ...prev, answers: e.target.value }))}
-            />
-            <button className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white" type="submit">
-              Submit Quiz
-            </button>
-          </form>
-          {message && <p className="mt-2 text-sm text-indigo-700">{message}</p>}
+          <p className="mt-3 text-sm text-slate-600">Attempt quizzes in full-screen player with one question per page.</p>
         </div>
 
         <div className="rounded-xl bg-white p-4 shadow">

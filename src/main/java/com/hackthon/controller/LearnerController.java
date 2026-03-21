@@ -3,6 +3,8 @@ package com.hackthon.controller;
 import com.hackthon.model.Course;
 import com.hackthon.model.Enrollment;
 import com.hackthon.model.Lesson;
+import com.hackthon.model.QuizOption;
+import com.hackthon.model.QuizQuestion;
 import com.hackthon.model.Quiz;
 import com.hackthon.model.Review;
 import com.hackthon.service.ElearningService;
@@ -52,6 +54,17 @@ public class LearnerController {
         return elearningService.courseQuizzes(courseId);
     }
 
+    @GetMapping("/quizzes/{quizId}/questions")
+    public List<QuizQuestionResponse> quizQuestions(@PathVariable Long quizId) {
+        List<QuizQuestion> questions = elearningService.quizQuestions(quizId);
+        return questions.stream().map(question -> {
+            List<QuizOptionResponse> options = elearningService.questionOptions(question.getId()).stream()
+                    .map(option -> new QuizOptionResponse(option.getId(), option.getText()))
+                    .toList();
+            return new QuizQuestionResponse(question.getId(), question.getText(), question.getQuestionOrder(), options);
+        }).toList();
+    }
+
     @PostMapping("/enrollments/{enrollmentId}/lessons/{lessonId}/complete")
     public Enrollment completeLesson(@PathVariable Long enrollmentId, @PathVariable Long lessonId) {
         return elearningService.completeLesson(enrollmentId, lessonId);
@@ -77,5 +90,11 @@ public class LearnerController {
     }
 
     public record ReviewRequest(@Min(1) @Max(5) Integer rating, @NotBlank String reviewText) {
+    }
+
+    public record QuizOptionResponse(Long id, String text) {
+    }
+
+    public record QuizQuestionResponse(Long id, String text, Integer questionOrder, List<QuizOptionResponse> options) {
     }
 }

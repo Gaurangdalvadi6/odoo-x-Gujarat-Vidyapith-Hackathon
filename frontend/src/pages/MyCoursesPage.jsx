@@ -41,7 +41,7 @@ function MyCoursesPage() {
             <h2 className="text-lg font-semibold">{item.course?.title}</h2>
             <p className="text-sm text-slate-600">Status: {item.status}</p>
             <p className="text-sm text-slate-600">Completion: {item.completionPercentage}%</p>
-            <Link className="mt-3 inline-block rounded-md bg-indigo-600 px-3 py-2 text-sm text-white" to={`/courses/${item.course?.id}`}>
+            <Link className="mt-3 inline-block rounded-md bg-indigo-600 px-3 py-2 text-sm text-white" to={`/player/${item.course?.id}/${item.id}`}>
               Continue
             </Link>
           </div>

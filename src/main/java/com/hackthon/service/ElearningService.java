@@ -112,6 +112,14 @@ public class ElearningService {
         return quizRepository.findByCourseId(courseId);
     }
 
+    public List<QuizQuestion> quizQuestions(Long quizId) {
+        return quizQuestionRepository.findByQuizIdOrderByQuestionOrderAsc(quizId);
+    }
+
+    public List<QuizOption> questionOptions(Long questionId) {
+        return quizOptionRepository.findByQuestionId(questionId);
+    }
+
     @Transactional
     public Quiz addQuiz(Long courseId, Quiz quiz) {
         quiz.setCourse(getCourse(courseId));
