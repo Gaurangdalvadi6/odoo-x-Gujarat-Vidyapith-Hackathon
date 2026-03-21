@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -160,6 +161,19 @@ public class ElearningService {
     }
 
     @Transactional
+    public Enrollment completeCourse(Long enrollmentId) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Enrollment not found"));
+        recalcCompletion(enrollment);
+        if ((enrollment.getCompletionPercentage() == null ? 0 : enrollment.getCompletionPercentage()) < 100) {
+            throw new ResponseStatusException(BAD_REQUEST, "All lessons must be completed first.");
+        }
+        enrollment.setStatus(Enums.EnrollmentStatus.COMPLETED);
+        enrollment.setCompletedDate(LocalDate.now());
+        return enrollmentRepository.save(enrollment);
+    }
+
+    @Transactional
     public Enrollment completeLesson(Long enrollmentId, Long lessonId) {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Enrollment not found"));
@@ -186,7 +200,7 @@ public class ElearningService {
     }
 
     @Transactional
-    public int submitQuiz(Long quizId, Long userId, Map<Long, Long> answers) {
+    public QuizSubmissionResult submitQuiz(Long quizId, Long userId, Map<Long, Long> answers) {
         Quiz quiz = getQuiz(quizId);
         AppUser user = getUser(userId);
         List<QuizQuestion> questions = quizQuestionRepository.findByQuizIdOrderByQuestionOrderAsc(quizId);
@@ -226,7 +240,13 @@ public class ElearningService {
         user.setTotalPoints(user.getTotalPoints() + earned);
         user.setBadgeLevel(resolveBadge(user.getTotalPoints()));
         userRepository.save(user);
-        return earned;
+        return new QuizSubmissionResult(
+                earned,
+                user.getTotalPoints(),
+                user.getBadgeLevel().name(),
+                correct,
+                questions.size()
+        );
     }
 
     @Transactional
@@ -245,6 +265,36 @@ public class ElearningService {
 
     public List<Enrollment> reportByCourse(Long courseId) {
         return enrollmentRepository.findByCourseId(courseId);
+    }
+
+    @Transactional
+    public Enrollment inviteAttendeeByEmail(Long courseId, String email) {
+        AppUser user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "User email not found."));
+        return enroll(courseId, user.getId(), true, false);
+    }
+
+    public Map<String, Object> contactAttendees(Long courseId, String subject, String message) {
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
+        List<String> emails = enrollments.stream()
+                .map(e -> e.getUser().getEmail())
+                .distinct()
+                .collect(Collectors.toList());
+        return Map.of(
+                "subject", subject,
+                "message", message,
+                "recipients", emails,
+                "recipientCount", emails.size()
+        );
+    }
+
+    @Transactional
+    public void deleteQuizQuestion(Long questionId) {
+        if (!quizQuestionRepository.existsById(questionId)) {
+            throw new ResponseStatusException(NOT_FOUND, "Question not found");
+        }
+        quizOptionRepository.deleteByQuestionId(questionId);
+        quizQuestionRepository.deleteById(questionId);
     }
 
     private void recalcCompletion(Enrollment enrollment) {
@@ -282,5 +332,14 @@ public class ElearningService {
 
     private Quiz getQuiz(Long id) {
         return quizRepository.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Quiz not found"));
+    }
+
+    public record QuizSubmissionResult(
+            int pointsEarned,
+            int totalPoints,
+            String badgeLevel,
+            int correctAnswers,
+            int totalQuestions
+    ) {
     }
 }

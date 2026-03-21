@@ -41,7 +41,15 @@ public class AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(Map.of("role", user.getRole().name()), userDetails);
-        return new AuthResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), token);
+        return new AuthResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getTotalPoints(),
+                user.getBadgeLevel(),
+                token
+        );
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -52,6 +60,14 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Invalid credentials."));
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(Map.of("role", user.getRole().name()), userDetails);
-        return new AuthResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), token);
+        return new AuthResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getTotalPoints(),
+                user.getBadgeLevel(),
+                token
+        );
     }
 }

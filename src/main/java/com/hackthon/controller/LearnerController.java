@@ -70,10 +70,22 @@ public class LearnerController {
         return elearningService.completeLesson(enrollmentId, lessonId);
     }
 
+    @PostMapping("/enrollments/{enrollmentId}/complete-course")
+    public Enrollment completeCourse(@PathVariable Long enrollmentId) {
+        return elearningService.completeCourse(enrollmentId);
+    }
+
     @PostMapping("/quizzes/{quizId}/submit")
     public Map<String, Object> submitQuiz(@PathVariable Long quizId, @RequestParam Long userId, @RequestBody SubmitQuizRequest request) {
-        int points = elearningService.submitQuiz(quizId, userId, request.answers());
-        return Map.of("message", "Quiz completed", "pointsEarned", points);
+        ElearningService.QuizSubmissionResult result = elearningService.submitQuiz(quizId, userId, request.answers());
+        return Map.of(
+                "message", "Quiz completed",
+                "pointsEarned", result.pointsEarned(),
+                "totalPoints", result.totalPoints(),
+                "badgeLevel", result.badgeLevel(),
+                "correctAnswers", result.correctAnswers(),
+                "totalQuestions", result.totalQuestions()
+        );
     }
 
     @PostMapping("/courses/{courseId}/reviews")

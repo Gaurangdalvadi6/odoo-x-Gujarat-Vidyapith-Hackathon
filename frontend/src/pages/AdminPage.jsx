@@ -10,6 +10,11 @@ function AdminPage() {
   const [message, setMessage] = useState('')
   const [view, setView] = useState('LIST')
   const [courseSearch, setCourseSearch] = useState('')
+  const [courseQuizzes, setCourseQuizzes] = useState([])
+  const [questionList, setQuestionList] = useState([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [contactForm, setContactForm] = useState({ subject: '', message: '' })
+  const [contactResult, setContactResult] = useState(null)
   const [courseDetails, setCourseDetails] = useState({
     tags: '',
     shortDescription: '',
@@ -42,6 +47,33 @@ function AdminPage() {
     loadCourses()
   }, [])
 
+  useEffect(() => {
+    const loadQuizzes = async () => {
+      if (!activeCourseId) {
+        setCourseQuizzes([])
+        return
+      }
+      const { data } = await api.get(`/api/admin/courses/${activeCourseId}/quizzes`)
+      setCourseQuizzes(data)
+      if (!questionForm.quizId && data.length) {
+        setQuestionForm((prev) => ({ ...prev, quizId: String(data[0].id) }))
+      }
+    }
+    loadQuizzes()
+  }, [activeCourseId])
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      if (!questionForm.quizId) {
+        setQuestionList([])
+        return
+      }
+      const { data } = await api.get(`/api/admin/quizzes/${questionForm.quizId}/questions`)
+      setQuestionList(data)
+    }
+    loadQuestions()
+  }, [questionForm.quizId])
+
   const createCourse = async (e) => {
     e.preventDefault()
     await api.post('/api/admin/courses', { ...courseForm, responsibleUserId: userId })
@@ -68,6 +100,8 @@ function AdminPage() {
     if (!activeCourseId) return
     await api.post(`/api/admin/courses/${activeCourseId}/quizzes`, quizForm)
     setMessage('Quiz added')
+    const { data } = await api.get(`/api/admin/courses/${activeCourseId}/quizzes`)
+    setCourseQuizzes(data)
   }
 
   const updateCourse = async (e) => {
@@ -102,6 +136,31 @@ function AdminPage() {
       ],
     })
     setMessage('Quiz question added')
+    const { data } = await api.get(`/api/admin/quizzes/${questionForm.quizId}/questions`)
+    setQuestionList(data)
+  }
+
+  const deleteQuestion = async (questionId) => {
+    await api.delete(`/api/admin/quizzes/questions/${questionId}`)
+    const { data } = await api.get(`/api/admin/quizzes/${questionForm.quizId}/questions`)
+    setQuestionList(data)
+    setMessage('Question deleted')
+  }
+
+  const inviteAttendee = async (e) => {
+    e.preventDefault()
+    if (!activeCourseId || !inviteEmail) return
+    await api.post(`/api/admin/courses/${activeCourseId}/attendees/invite`, { email: inviteEmail })
+    setInviteEmail('')
+    setMessage('Attendee invited')
+  }
+
+  const contactAttendees = async (e) => {
+    e.preventDefault()
+    if (!activeCourseId) return
+    const { data } = await api.post(`/api/admin/courses/${activeCourseId}/attendees/contact`, contactForm)
+    setContactResult(data)
+    setMessage('Attendee contact prepared')
   }
 
   const loadReport = async () => {
@@ -253,7 +312,18 @@ function AdminPage() {
         <section className="rounded-xl bg-white p-4 shadow">
           <h2 className="font-semibold">Quiz Builder (Add Questions)</h2>
           <form className="mt-3 space-y-2" onSubmit={addQuestion}>
-            <input className="w-full rounded-md border px-3 py-2" placeholder="Quiz ID" value={questionForm.quizId} onChange={(e) => setQuestionForm((p) => ({ ...p, quizId: e.target.value }))} />
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={questionForm.quizId}
+              onChange={(e) => setQuestionForm((p) => ({ ...p, quizId: e.target.value }))}
+            >
+              <option value="">Select quiz</option>
+              {courseQuizzes.map((quiz) => (
+                <option key={quiz.id} value={quiz.id}>
+                  {quiz.title}
+                </option>
+              ))}
+            </select>
             <input className="w-full rounded-md border px-3 py-2" placeholder="Question text" value={questionForm.text} onChange={(e) => setQuestionForm((p) => ({ ...p, text: e.target.value }))} />
             {questionForm.options.map((opt, idx) => (
               <div key={idx} className="flex gap-2">
@@ -288,6 +358,73 @@ function AdminPage() {
               Save Question
             </button>
           </form>
+          <div className="mt-4 space-y-2">
+            <h3 className="text-sm font-semibold">Existing Questions</h3>
+            {questionList.map((question) => (
+              <div key={question.id} className="rounded-md border p-2">
+                <p className="text-sm font-medium">{question.questionOrder}. {question.text}</p>
+                <ul className="mt-1 list-disc pl-5 text-xs text-slate-600">
+                  {question.options.map((option) => (
+                    <li key={option.id}>
+                      {option.text} {option.correct ? '(correct)' : ''}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className="mt-2 rounded-md bg-rose-600 px-2 py-1 text-xs text-white"
+                  onClick={() => deleteQuestion(question.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-xl bg-white p-4 shadow">
+          <h2 className="font-semibold">Attendee Invite</h2>
+          <p className="text-xs text-slate-500">Invite by learner email to selected course.</p>
+          <form className="mt-3 flex gap-2" onSubmit={inviteAttendee}>
+            <input
+              className="flex-1 rounded-md border px-3 py-2"
+              placeholder="learner@email.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+            <button className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white" type="submit">
+              Invite
+            </button>
+          </form>
+        </section>
+
+        <section className="rounded-xl bg-white p-4 shadow">
+          <h2 className="font-semibold">Contact Attendees</h2>
+          <form className="mt-3 space-y-2" onSubmit={contactAttendees}>
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Subject"
+              value={contactForm.subject}
+              onChange={(e) => setContactForm((p) => ({ ...p, subject: e.target.value }))}
+            />
+            <textarea
+              className="h-20 w-full rounded-md border px-3 py-2"
+              placeholder="Message"
+              value={contactForm.message}
+              onChange={(e) => setContactForm((p) => ({ ...p, message: e.target.value }))}
+            />
+            <button className="rounded-md bg-slate-800 px-3 py-2 text-sm text-white" type="submit">
+              Prepare Contact
+            </button>
+          </form>
+          {contactResult && (
+            <div className="mt-3 rounded-md bg-slate-50 p-2 text-xs">
+              <p>Recipients: {contactResult.recipientCount}</p>
+              <p>{(contactResult.recipients || []).join(', ')}</p>
+            </div>
+          )}
         </section>
       </section>
 

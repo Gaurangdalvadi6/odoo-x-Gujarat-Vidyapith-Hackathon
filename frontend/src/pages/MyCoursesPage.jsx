@@ -27,7 +27,7 @@ function MyCoursesPage() {
   const stats = useMemo(
     () => ({
       points: auth?.totalPoints ?? 0,
-      badge: badgeFromPoints(auth?.totalPoints ?? 0),
+      badge: auth?.badgeLevel ? String(auth.badgeLevel) : badgeFromPoints(auth?.totalPoints ?? 0),
     }),
     [auth],
   )

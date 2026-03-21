@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 
 function PlayerPage() {
   const { courseId, enrollmentId } = useParams()
-  const { userId } = useAuth()
+  const { userId, updateProfile } = useAuth()
   const navigate = useNavigate()
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -17,29 +17,31 @@ function PlayerPage() {
   const [quizIndex, setQuizIndex] = useState(0)
   const [answers, setAnswers] = useState({})
   const [pointsMessage, setPointsMessage] = useState('')
+  const [enrollment, setEnrollment] = useState(null)
+  const [courseCompletedMessage, setCourseCompletedMessage] = useState('')
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: lessonData }, { data: quizData }] = await Promise.all([
+      const [{ data: lessonData }, { data: quizData }, { data: myCourses }] = await Promise.all([
         api.get(`/api/learn/courses/${courseId}/lessons`),
         api.get(`/api/learn/courses/${courseId}/quizzes`),
+        api.get(`/api/learn/my-courses/${userId}`),
       ])
       setLessons(lessonData)
       setQuizzes(quizData)
+      setEnrollment(myCourses.find((item) => String(item.id) === String(enrollmentId)) ?? null)
     }
     load()
-  }, [courseId])
+  }, [courseId, enrollmentId, userId])
 
   const currentLesson = selected.type === 'lesson' ? lessons[selected.index] : null
   const currentQuiz = selected.type === 'quiz' ? quizzes[selected.index] : null
-  const completion = useMemo(() => {
-    if (!lessons.length) return 0
-    return Math.round(((selected.type === 'lesson' ? selected.index + 1 : lessons.length) * 100) / lessons.length)
-  }, [lessons.length, selected])
+  const completion = useMemo(() => enrollment?.completionPercentage ?? 0, [enrollment])
 
   const markLessonComplete = async () => {
     if (!currentLesson) return
-    await api.post(`/api/learn/enrollments/${enrollmentId}/lessons/${currentLesson.id}/complete`)
+    const { data } = await api.post(`/api/learn/enrollments/${enrollmentId}/lessons/${currentLesson.id}/complete`)
+    setEnrollment(data)
   }
 
   const nextContent = async () => {
@@ -73,8 +75,19 @@ function PlayerPage() {
       return
     }
     const { data } = await api.post(`/api/learn/quizzes/${currentQuiz.id}/submit?userId=${userId}`, { answers })
-    setPointsMessage(`You have earned ${data.pointsEarned} points`)
+    setPointsMessage(
+      `You have earned ${data.pointsEarned} points. Score: ${data.correctAnswers}/${data.totalQuestions}. Total points: ${data.totalPoints}. Badge: ${data.badgeLevel}`,
+    )
+    updateProfile({ totalPoints: data.totalPoints, badgeLevel: data.badgeLevel })
     setQuizStarted(false)
+    const { data: myCourses } = await api.get(`/api/learn/my-courses/${userId}`)
+    setEnrollment(myCourses.find((item) => String(item.id) === String(enrollmentId)) ?? null)
+  }
+
+  const completeCourse = async () => {
+    const { data } = await api.post(`/api/learn/enrollments/${enrollmentId}/complete-course`)
+    setEnrollment(data)
+    setCourseCompletedMessage('Course marked as completed successfully.')
   }
 
   return (
@@ -169,6 +182,23 @@ function PlayerPage() {
             {pointsMessage && <p className="rounded-md bg-indigo-50 p-3 text-sm text-indigo-700">{pointsMessage}</p>}
           </div>
         )}
+
+        {completion >= 100 && enrollment?.status !== 'COMPLETED' && (
+          <div className="mt-6 rounded-md border border-indigo-200 bg-indigo-50 p-4">
+            <p className="text-sm text-indigo-700">All lessons completed. You can now finish the course.</p>
+            <button
+              type="button"
+              className="mt-2 rounded-md bg-indigo-600 px-4 py-2 text-sm text-white"
+              onClick={completeCourse}
+            >
+              Complete this course
+            </button>
+          </div>
+        )}
+        {enrollment?.status === 'COMPLETED' && (
+          <p className="mt-4 rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">Course completed.</p>
+        )}
+        {courseCompletedMessage && <p className="mt-2 text-sm text-indigo-700">{courseCompletedMessage}</p>}
       </section>
     </div>
   )

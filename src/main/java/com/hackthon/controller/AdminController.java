@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -63,6 +64,11 @@ public class AdminController {
         return elearningService.addQuiz(courseId, quiz);
     }
 
+    @GetMapping("/courses/{courseId}/quizzes")
+    public List<Quiz> quizzes(@PathVariable Long courseId) {
+        return elearningService.courseQuizzes(courseId);
+    }
+
     @PostMapping("/quizzes/{quizId}/questions")
     public QuizQuestion addQuestion(@PathVariable Long quizId, @RequestBody AddQuestionRequest request) {
         List<QuizOption> options = request.options().stream().map(opt -> {
@@ -74,9 +80,37 @@ public class AdminController {
         return elearningService.addQuizQuestion(quizId, request.text(), request.questionOrder(), options);
     }
 
+    @GetMapping("/quizzes/{quizId}/questions")
+    public List<QuizQuestionResponse> quizQuestions(@PathVariable Long quizId) {
+        List<QuizQuestion> questions = elearningService.quizQuestions(quizId);
+        return questions.stream().map(question -> new QuizQuestionResponse(
+                question.getId(),
+                question.getText(),
+                question.getQuestionOrder(),
+                elearningService.questionOptions(question.getId()).stream()
+                        .map(option -> new QuestionOptionAdminResponse(option.getId(), option.getText(), option.isCorrect()))
+                        .toList()
+        )).toList();
+    }
+
+    @DeleteMapping("/quizzes/questions/{questionId}")
+    public void deleteQuestion(@PathVariable Long questionId) {
+        elearningService.deleteQuizQuestion(questionId);
+    }
+
     @PostMapping("/courses/{courseId}/attendees")
     public Enrollment addAttendee(@PathVariable Long courseId, @RequestParam Long userId) {
         return elearningService.enroll(courseId, userId, true, false);
+    }
+
+    @PostMapping("/courses/{courseId}/attendees/invite")
+    public Enrollment inviteAttendee(@PathVariable Long courseId, @RequestBody InviteAttendeeRequest request) {
+        return elearningService.inviteAttendeeByEmail(courseId, request.email());
+    }
+
+    @PostMapping("/courses/{courseId}/attendees/contact")
+    public Object contactAttendees(@PathVariable Long courseId, @RequestBody ContactAttendeesRequest request) {
+        return elearningService.contactAttendees(courseId, request.subject(), request.message());
     }
 
     @GetMapping("/reports/courses/{courseId}")
@@ -91,5 +125,17 @@ public class AdminController {
     }
 
     public record QuestionOptionInput(@NotBlank String text, boolean correct) {
+    }
+
+    public record InviteAttendeeRequest(@NotBlank String email) {
+    }
+
+    public record ContactAttendeesRequest(@NotBlank String subject, @NotBlank String message) {
+    }
+
+    public record QuestionOptionAdminResponse(Long id, String text, boolean correct) {
+    }
+
+    public record QuizQuestionResponse(Long id, String text, Integer questionOrder, List<QuestionOptionAdminResponse> options) {
     }
 }

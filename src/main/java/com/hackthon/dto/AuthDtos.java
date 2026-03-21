@@ -26,6 +26,8 @@ public final class AuthDtos {
             String name,
             String email,
             Enums.UserRole role,
+            Integer totalPoints,
+            Enums.BadgeLevel badgeLevel,
             String token
     ) {
     }

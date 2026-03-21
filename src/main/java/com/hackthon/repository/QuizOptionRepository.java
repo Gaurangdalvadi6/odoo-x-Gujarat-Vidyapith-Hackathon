@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface QuizOptionRepository extends JpaRepository<QuizOption, Long> {
     List<QuizOption> findByQuestionId(Long questionId);
+
+    void deleteByQuestionId(Long questionId);
 }

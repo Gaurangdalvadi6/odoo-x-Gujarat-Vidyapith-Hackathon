@@ -34,6 +34,10 @@ export function AuthProvider({ children }) {
 
   const logout = () => setAuth(null)
 
+  const updateProfile = (partial) => {
+    setAuth((prev) => (prev ? { ...prev, ...partial } : prev))
+  }
+
   const value = useMemo(
     () => ({
       auth,
@@ -42,6 +46,7 @@ export function AuthProvider({ children }) {
       userId: auth?.userId,
       login,
       register,
+      updateProfile,
       logout,
     }),
     [auth],
