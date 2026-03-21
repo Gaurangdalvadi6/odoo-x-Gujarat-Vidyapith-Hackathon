@@ -26,7 +26,15 @@ function AdminPage() {
   })
 
   const [courseForm, setCourseForm] = useState({ title: '' })
-  const [lessonForm, setLessonForm] = useState({ title: '', type: 'VIDEO', lessonOrder: 1 })
+  const [lessonForm, setLessonForm] = useState({
+    title: '',
+    type: 'VIDEO',
+    description: '',
+    contentUrl: '',
+    durationMinutes: 10,
+    allowDownload: false,
+    lessonOrder: 1,
+  })
   const [quizForm, setQuizForm] = useState({ title: 'Quiz 1' })
   const [questionForm, setQuestionForm] = useState({
     quizId: '',
@@ -90,9 +98,21 @@ function AdminPage() {
   const addLesson = async (e) => {
     e.preventDefault()
     if (!activeCourseId) return
-    await api.post(`/api/admin/courses/${activeCourseId}/lessons`, lessonForm)
+    await api.post(`/api/admin/courses/${activeCourseId}/lessons`, {
+      ...lessonForm,
+      durationMinutes: Number(lessonForm.durationMinutes || 0),
+      lessonOrder: Number(lessonForm.lessonOrder || 1),
+    })
     setMessage('Lesson added')
-    setLessonForm({ title: '', type: 'VIDEO', lessonOrder: 1 })
+    setLessonForm({
+      title: '',
+      type: 'VIDEO',
+      description: '',
+      contentUrl: '',
+      durationMinutes: 10,
+      allowDownload: false,
+      lessonOrder: 1,
+    })
   }
 
   const addQuiz = async (e) => {
@@ -211,6 +231,12 @@ function AdminPage() {
               value={lessonForm.title}
               onChange={(e) => setLessonForm((prev) => ({ ...prev, title: e.target.value }))}
             />
+            <textarea
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Lesson description"
+              value={lessonForm.description}
+              onChange={(e) => setLessonForm((prev) => ({ ...prev, description: e.target.value }))}
+            />
             <select
               className="w-full rounded-md border px-3 py-2"
               value={lessonForm.type}
@@ -220,6 +246,27 @@ function AdminPage() {
               <option value="DOCUMENT">Document</option>
               <option value="IMAGE">Image</option>
             </select>
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Content URL (video/doc/image)"
+              value={lessonForm.contentUrl}
+              onChange={(e) => setLessonForm((prev) => ({ ...prev, contentUrl: e.target.value }))}
+            />
+            <input
+              type="number"
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Duration (minutes)"
+              value={lessonForm.durationMinutes}
+              onChange={(e) => setLessonForm((prev) => ({ ...prev, durationMinutes: e.target.value }))}
+            />
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={lessonForm.allowDownload}
+                onChange={(e) => setLessonForm((prev) => ({ ...prev, allowDownload: e.target.checked }))}
+              />
+              Allow download
+            </label>
             <button className="rounded-md bg-slate-800 px-3 py-2 text-sm text-white" type="submit">
               Add Lesson
             </button>
