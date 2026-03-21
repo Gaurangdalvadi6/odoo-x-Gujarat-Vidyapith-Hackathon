@@ -4,6 +4,7 @@ import com.hackthon.service.AppUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -33,6 +34,8 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/learn/courses").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/learn/courses/*/reviews").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers("/api/learn/**").hasAnyRole("LEARNER", "ADMIN", "INSTRUCTOR")
                         .anyRequest().authenticated()

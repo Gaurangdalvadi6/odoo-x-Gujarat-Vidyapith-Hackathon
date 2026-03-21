@@ -2,6 +2,8 @@ package com.hackthon.controller;
 
 import com.hackthon.model.Course;
 import com.hackthon.model.Enrollment;
+import com.hackthon.model.Lesson;
+import com.hackthon.model.Quiz;
 import com.hackthon.model.Review;
 import com.hackthon.service.ElearningService;
 import jakarta.validation.constraints.Max;
@@ -38,6 +40,16 @@ public class LearnerController {
     @GetMapping("/my-courses/{userId}")
     public List<Enrollment> myCourses(@PathVariable Long userId) {
         return elearningService.userEnrollments(userId);
+    }
+
+    @GetMapping("/courses/{courseId}/lessons")
+    public List<Lesson> lessons(@PathVariable Long courseId) {
+        return elearningService.courseLessons(courseId);
+    }
+
+    @GetMapping("/courses/{courseId}/quizzes")
+    public List<Quiz> quizzes(@PathVariable Long courseId) {
+        return elearningService.courseQuizzes(courseId);
     }
 
     @PostMapping("/enrollments/{enrollmentId}/lessons/{lessonId}/complete")
