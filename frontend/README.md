@@ -1,16 +1,61 @@
-# React + Vite
+# Learnova — Frontend (React + Vite + Tailwind)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This folder contains the **React** web app for the Learnova eLearning platform. It talks to the Spring Boot API in the parent directory.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **Vite 8**
+- **React Router** — routing and protected routes
+- **Tailwind CSS** — styling
+- **Axios** — HTTP client to backend
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 18+ and npm
 
-## Expanding the ESLint configuration
+## Install & run
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+```
+
+Point the app at your API (default in code: `http://localhost:8080`):
+
+```bash
+# Windows PowerShell
+$env:VITE_API_BASE_URL="http://localhost:8080"
+npm run dev
+```
+
+Or create `frontend/.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+Then open the URL shown in the terminal (usually `http://localhost:5173`).
+
+## Build for production
+
+```bash
+npm run build
+```
+
+Output is in `frontend/dist/`. Serve with any static file server or integrate with your deployment pipeline.
+
+## Main routes
+
+| Path | Description |
+|------|-------------|
+| `/courses` | Published courses |
+| `/login`, `/register` | Authentication |
+| `/my-courses` | Learner dashboard |
+| `/courses/:courseId` | Course detail |
+| `/player/:courseId/:enrollmentId` | Full-screen lesson/quiz player |
+| `/admin` | Instructor/admin back-office (JWT role required) |
+
+## Full project documentation
+
+See the repository root **[README.md](../README.md)** for backend setup, database, and architecture.
+
+**Complete REST API list:** [README.md — API Endpoints](../README.md#api-endpoints) (root `README.md`, section **API Endpoints**).
